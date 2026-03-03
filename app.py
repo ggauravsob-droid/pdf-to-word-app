@@ -40,7 +40,6 @@ if uploaded_file is not None:
                 with tempfile.TemporaryDirectory() as temp_dir:
                     st.write("Images extract ki ja rahi hain...")
                     
-                    # Cloud par paths_only aur C: drive ki zarurat nahi hai
                     image_paths = convert_from_path(
                         pdf_path, dpi=200, output_folder=temp_dir, paths_only=True, fmt='jpeg', grayscale=True
                     )
@@ -53,9 +52,9 @@ if uploaded_file is not None:
                         extracted_texts = list(executor.map(process_single_page, image_paths))
                     
                     for i, text in enumerate(extracted_texts):
-                        doc.add_heading(f'--- Page {i+1} ---', level=2)
+                        # YAHAN SE 'PAGE NUMBER' WALI LINE HATA DI GAYI HAI
                         doc.add_paragraph(text)
-                        doc.add_paragraph("")
+                        doc.add_paragraph("") # Paragraphs ke beech halka sa gap rakha hai
                         progress_bar.progress((i + 1) / total_pages)
                         
                 doc.save(word_path)
