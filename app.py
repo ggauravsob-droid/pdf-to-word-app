@@ -5,11 +5,12 @@ from docx import Document
 import os
 import re
 import tempfile
-from concurrent.futures import ProcessPoolExecutor
+# SPEED HACK 1: ProcessPool ki jagah ThreadPool use kiya hai
+from concurrent.futures import ThreadPoolExecutor
 
-st.set_page_config(page_title="PDF to Word (Hindi+English)", page_icon="📄")
-st.title("📄 Smart PDF to Word Converter")
-st.write("Apni PDF upload karein. Yeh app Hindi aur English text ko extract karke bina extra spaces ke Word file banayega.")
+st.set_page_config(page_title="Fast PDF to Word", page_icon="⚡")
+st.title("⚡ Fast Scanned PDF Converter")
+st.write("Apni PDF upload karein. Yeh app Hindi/English text tezi se extract karega bina extra spaces ke.")
 
 def remove_extra_spaces_and_clean(text):
     cleaned = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]', '', text)
@@ -27,8 +28,8 @@ uploaded_file = st.file_uploader("Apni PDF file yahan drag & drop karein", type=
 if uploaded_file is not None:
     st.info("File upload ho gayi hai. Conversion shuru karne ke liye niche button dabayein.")
     
-    if st.button("Start Conversion 🚀"):
-        with st.spinner("Processing chal rahi hai... Kripya pratiksha karein"):
+    if st.button("Start Fast Conversion 🚀"):
+        with st.spinner("⚡ Processing bohot tezi se chal rahi hai... Kripya pratiksha karein"):
             try:
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_pdf:
                     temp_pdf.write(uploaded_file.read())
@@ -40,33 +41,36 @@ if uploaded_file is not None:
                 with tempfile.TemporaryDirectory() as temp_dir:
                     st.write("Images extract ki ja rahi hain...")
                     
+                    # SPEED HACK 2: DPI 200 se 150 kar diya gaya hai (Speed double ho jayegi)
                     image_paths = convert_from_path(
-                        pdf_path, dpi=200, output_folder=temp_dir, paths_only=True, fmt='jpeg', grayscale=True
+                        pdf_path, dpi=150, output_folder=temp_dir, paths_only=True, fmt='jpeg', grayscale=True
                     )
                     
                     total_pages = len(image_paths)
-                    st.write(f"Total {total_pages} pages mile. OCR chal raha hai...")
+                    st.write(f"Total {total_pages} pages mile. Fast OCR chal raha hai...")
                     progress_bar = st.progress(0)
                     
-                    with ProcessPoolExecutor() as executor:
+                    # SPEED HACK 3: max_workers=4 lagaya hai taaki Cloud server overload na ho
+                    with ThreadPoolExecutor(max_workers=4) as executor:
                         extracted_texts = list(executor.map(process_single_page, image_paths))
                     
                     for i, text in enumerate(extracted_texts):
-                        # YAHAN SE 'PAGE NUMBER' WALI LINE HATA DI GAYI HAI
-                        doc.add_paragraph(text)
-                        doc.add_paragraph("") # Paragraphs ke beech halka sa gap rakha hai
+                        if text.strip(): # Khali page hone par kuch na likhe
+                            doc.add_paragraph(text)
+                            doc.add_paragraph("") 
                         progress_bar.progress((i + 1) / total_pages)
                         
                 doc.save(word_path)
-                st.success("✅ Conversion poora ho gaya!")
+                st.success("✅ Fast Conversion poora ho gaya!")
                 
                 with open(word_path, "rb") as file:
                     st.download_button(
                         label="📥 Download Word File",
                         data=file,
-                        file_name=uploaded_file.name.replace('.pdf', '_Converted.docx'),
+                        file_name=uploaded_file.name.replace('.pdf', '_Fast_Converted.docx'),
                         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     )
                     
             except Exception as e:
-                st.error(f"Ek error aa gaya: {e}")
+                st.error(f"Ek error aa gaya: {e}")}")
+
